@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json bun.lock* ./
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy application source code
 COPY . .
@@ -24,7 +24,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy custom Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose HTTP port
-EXPOSE 3000
+# Expose HTTP ports (both 80 and 3000)
+EXPOSE 80 3000
 
 CMD ["nginx", "-g", "daemon off;"]
