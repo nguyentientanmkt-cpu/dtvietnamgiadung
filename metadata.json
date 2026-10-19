@@ -1,0 +1,6 @@
+{
+  "name": "D&T Việt Nam - Hàng Gia Dụng, Tiện Ích & Vệ Sinh Thông Minh",
+  "description": "Website thương mại điện tử chính thức của D&T Việt Nam. Chuyên phân phối hàng gia dụng, tiện ích gia đình, vệ sinh nhà cửa, xử lý côn trùng, đuổi chuột và hàng nội địa Thái Lan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

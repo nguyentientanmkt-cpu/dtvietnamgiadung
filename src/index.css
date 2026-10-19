@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Floating Contact Pulse Animation (Mượt mà, chu kỳ 2s, GPU-accelerated) */
+@keyframes contactPulseRing {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.28;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.contact-pulse-ring {
+  animation: contactPulseRing 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-pulse-ring,
+  .animate-shimmer {
+    animation: none !important;
+  }
+}
+
+/* Button Shimmer Glint Effect */
+@keyframes buttonShimmer {
+  0% {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  35%, 100% {
+    transform: translateX(140%) skewX(-20deg);
+  }
+}
+
+.animate-shimmer {
+  animation: buttonShimmer 3s ease-in-out infinite;
+}
