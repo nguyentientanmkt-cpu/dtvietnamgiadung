@@ -78,6 +78,7 @@ export interface Product {
   shopeeUrl?: string;
   tiktokUrl?: string;
   facebookUrl?: string;
+  landingPageUrl?: string;
 }
 
 export interface CartItem {

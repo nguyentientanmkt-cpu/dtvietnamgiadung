@@ -195,14 +195,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Chi tiết sản phẩm */}
-        <button
-          type="button"
-          onClick={() => onOpenDetail(product)}
-          className="w-full py-1 text-center text-[10px] sm:text-[11px] font-bold text-slate-500 hover:text-red-600 transition-colors flex items-center justify-center gap-1 cursor-pointer"
-        >
-          <Eye className="w-3 h-3" />
-          <span>Xem chi tiết công dụng &amp; thông số</span>
-        </button>
+        {product.landingPageUrl ? (
+          <a
+            href={product.landingPageUrl}
+            onClick={(e) => {
+              e.preventDefault();
+              onOpenDetail(product);
+            }}
+            className="w-full py-1.5 text-center text-[10px] sm:text-[11px] font-black text-red-600 hover:text-white bg-red-50 hover:bg-red-600 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Xem Landing Page Ưu Đãi →</span>
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onOpenDetail(product)}
+            className="w-full py-1 text-center text-[10px] sm:text-[11px] font-bold text-slate-500 hover:text-red-600 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Eye className="w-3 h-3" />
+            <span>Xem chi tiết công dụng &amp; thông số</span>
+          </button>
+        )}
 
       </div>
 

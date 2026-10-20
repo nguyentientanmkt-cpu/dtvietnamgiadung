@@ -81,8 +81,27 @@ export default function App() {
     });
   };
 
-  // Mở modal chi tiết sản phẩm
+  // Mở chi tiết sản phẩm: Nếu có Landing Page riêng thì chuyển hướng trực tiếp
   const handleOpenDetail = (product: Product) => {
+    const landingUrl = product.landingPageUrl || (
+      product.id === 'dt-chaindrite-600ml' || product.name.toLowerCase().includes('bình xịt diệt mối')
+        ? '/binh-xit-diet-moi-mot-kien-gian-con-trung/'
+        : null
+    );
+
+    if (landingUrl) {
+      trackConversion({
+        eventName: 'view_product_detail',
+        productName: product.name,
+        productId: product.id,
+        category: product.category,
+        buttonPosition: 'product_card_shopee',
+        additionalData: { action: 'open_landing_page', landingUrl }
+      });
+      window.location.href = landingUrl;
+      return;
+    }
+
     setSelectedProductDetail(product);
     trackConversion({
       eventName: 'view_product_detail',

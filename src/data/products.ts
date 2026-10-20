@@ -3012,7 +3012,8 @@ export const PRODUCTS: Product[] = [
     "inStock": true,
     "shopeeUrl": "https://shopee.vn/(Chính-hãng)-Bình-xịt-diệt-MỐI-MỌT-KIẾN-GIÁN-CÔN-TRÙNG-tận-gốc-hiệu-quả-an-toàn-hàng-Thái-Lan-600ml-i.1477950332.50854875110",
     "tiktokUrl": "https://www.tiktok.com/@dtvietnam_?_r=1&_t=ZS-9A1QeIhIHrO",
-    "facebookUrl": "https://www.facebook.com/tongkhodtvietnam/"
+    "facebookUrl": "https://www.facebook.com/tongkhodtvietnam/",
+    "landingPageUrl": "/binh-xit-diet-moi-mot-kien-gian-con-trung/"
   },
   {
     "id": "dt-diet-ruoi-dang-xit-king-bio-300ml-xit-la-85022",
