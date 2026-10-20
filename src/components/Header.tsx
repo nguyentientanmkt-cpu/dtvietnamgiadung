@@ -121,20 +121,36 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0">
-            <a 
-              href={`tel:${STORE_CONFIG.phoneRaw}`} 
-              onClick={() => trackConversion({
-                eventName: 'click_hotline',
-                buttonPosition: 'header',
-                additionalData: { phone: STORE_CONFIG.hotline }
-              })}
-              className="flex items-center gap-1 font-black hover:text-amber-200 transition-colors"
-            >
-              <PhoneCall className="w-3 h-3 text-amber-300" />
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1 font-black text-xs sm:text-xs">
+              <PhoneCall className="w-3 h-3 text-amber-300 shrink-0" />
               <span className="hidden xs:inline">Hotline:</span>
-              <span>{STORE_CONFIG.hotline}</span>
-            </a>
+              <a 
+                href={`tel:${STORE_CONFIG.phoneRaw}`} 
+                onClick={() => trackConversion({
+                  eventName: 'click_hotline',
+                  buttonPosition: 'header',
+                  additionalData: { phone: STORE_CONFIG.hotline }
+                })}
+                className="hover:text-amber-200 transition-colors"
+                title={`Gọi Hotline 1: ${STORE_CONFIG.hotline}`}
+              >
+                {STORE_CONFIG.hotline}
+              </a>
+              <span className="opacity-70 font-normal">-</span>
+              <a 
+                href={`tel:${STORE_CONFIG.phoneRaw2}`} 
+                onClick={() => trackConversion({
+                  eventName: 'click_hotline',
+                  buttonPosition: 'header',
+                  additionalData: { phone: STORE_CONFIG.hotline2 }
+                })}
+                className="hover:text-amber-200 transition-colors"
+                title={`Gọi Hotline 2: ${STORE_CONFIG.hotline2}`}
+              >
+                {STORE_CONFIG.hotline2}
+              </a>
+            </div>
 
             <a
               href={STORE_CONFIG.zaloUrl}
@@ -564,8 +580,11 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Fanpage Facebook D&amp;T</span>
               </a>
 
-              <div className="text-center text-[11px] text-slate-500 pt-2">
-                Hotline tư vấn: <strong className="text-red-600">{STORE_CONFIG.hotline}</strong>
+              <div className="text-center text-[11px] text-slate-500 pt-2 flex items-center justify-center gap-1.5 flex-wrap">
+                <span>Hotline tư vấn:</span>
+                <a href={STORE_CONFIG.phoneTel} className="font-extrabold text-red-600 hover:underline">{STORE_CONFIG.hotline}</a>
+                <span>-</span>
+                <a href={STORE_CONFIG.phoneTel2} className="font-extrabold text-red-600 hover:underline">{STORE_CONFIG.hotline2}</a>
               </div>
             </div>
 

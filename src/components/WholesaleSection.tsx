@@ -168,7 +168,7 @@ export const WholesaleSection: React.FC = () => {
                 className="py-3.5 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer text-center"
               >
                 <PhoneCall className="w-5 h-5 shrink-0" />
-                <span>GỌI HOTLINE: {STORE_CONFIG.hotline}</span>
+                <span>GỌI HOTLINE: {STORE_CONFIG.hotlineDisplay}</span>
               </a>
 
             </div>

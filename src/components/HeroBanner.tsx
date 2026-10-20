@@ -259,8 +259,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onScrollToWholesale }) =
                 <PhoneCall className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <div className="text-xs sm:text-sm font-black text-emerald-900 flex items-center gap-1.5">
-                  <span>HOTLINE: {STORE_CONFIG.hotline}</span>
+                <div className="text-xs sm:text-sm font-black text-emerald-900 flex items-center gap-1.5 flex-wrap">
+                  <span>HOTLINE: {STORE_CONFIG.hotline} - {STORE_CONFIG.hotline2}</span>
                   <span className="bg-emerald-200 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded">
                     24/7
                   </span>

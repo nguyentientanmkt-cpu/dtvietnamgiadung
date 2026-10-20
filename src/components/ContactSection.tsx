@@ -81,6 +81,7 @@ export const ContactSection: React.FC = () => {
                       <a href={STORE_CONFIG.phoneTel} className="text-red-600 font-black text-xs sm:text-sm hover:underline whitespace-nowrap">
                         {STORE_CONFIG.hotline}
                       </a>
+                      <span className="hidden sm:inline text-slate-400 font-bold">-</span>
                       <a href={STORE_CONFIG.phoneTel2} className="text-red-600 font-black text-xs sm:text-sm hover:underline whitespace-nowrap">
                         {STORE_CONFIG.hotline2}
                       </a>

@@ -90,7 +90,7 @@ export const FloatingContactWidgets: React.FC = () => {
             <MessageCircle className="w-5 h-5" />
           </a>
 
-          {/* HOTLINE */}
+          {/* HOTLINE 1 */}
           <a
             href={`tel:${STORE_CONFIG.phoneRaw}`}
             onClick={() => trackConversion({
@@ -99,7 +99,21 @@ export const FloatingContactWidgets: React.FC = () => {
               additionalData: { phone: STORE_CONFIG.hotline }
             })}
             className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer"
-            title={`Gọi Hotline ${STORE_CONFIG.hotline}`}
+            title={`Gọi Hotline 1: ${STORE_CONFIG.hotline}`}
+          >
+            <PhoneCall className="w-5 h-5" />
+          </a>
+
+          {/* HOTLINE 2 */}
+          <a
+            href={`tel:${STORE_CONFIG.phoneRaw2}`}
+            onClick={() => trackConversion({
+              eventName: 'click_hotline',
+              buttonPosition: 'floating_widget_hotline',
+              additionalData: { phone: STORE_CONFIG.hotline2 }
+            })}
+            className="w-11 h-11 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer"
+            title={`Gọi Hotline 2: ${STORE_CONFIG.hotline2}`}
           >
             <PhoneCall className="w-5 h-5" />
           </a>

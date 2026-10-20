@@ -382,18 +382,34 @@ export const CustomerTrustMidSection: React.FC<CustomerTrustMidSectionProps> = (
                 <span>Zalo Báo Sỉ</span>
               </a>
 
-              <a
-                href={`tel:${STORE_CONFIG.hotlineRaw}`}
-                onClick={() => trackConversion({
-                  eventName: 'click_hotline',
-                  buttonPosition: 'trust_mid_hotline',
-                  additionalData: { source: 'customer_trust_mid_section' }
-                })}
-                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-md cursor-pointer"
-              >
-                <PhoneCall className="w-3.5 h-3.5" />
-                <span>{STORE_CONFIG.hotline}</span>
-              </a>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <a
+                  href={`tel:${STORE_CONFIG.phoneRaw}`}
+                  onClick={() => trackConversion({
+                    eventName: 'click_hotline',
+                    buttonPosition: 'trust_mid_hotline',
+                    additionalData: { phone: STORE_CONFIG.hotline }
+                  })}
+                  className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-md cursor-pointer"
+                  title={`Gọi Hotline 1: ${STORE_CONFIG.hotline}`}
+                >
+                  <PhoneCall className="w-3.5 h-3.5" />
+                  <span>{STORE_CONFIG.hotline}</span>
+                </a>
+                <a
+                  href={`tel:${STORE_CONFIG.phoneRaw2}`}
+                  onClick={() => trackConversion({
+                    eventName: 'click_hotline',
+                    buttonPosition: 'trust_mid_hotline',
+                    additionalData: { phone: STORE_CONFIG.hotline2 }
+                  })}
+                  className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-md cursor-pointer"
+                  title={`Gọi Hotline 2: ${STORE_CONFIG.hotline2}`}
+                >
+                  <PhoneCall className="w-3.5 h-3.5" />
+                  <span>{STORE_CONFIG.hotline2}</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>

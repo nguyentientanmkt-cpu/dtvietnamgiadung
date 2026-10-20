@@ -33,7 +33,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, onScrollToWhol
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
             
             {/* 1. Hotline */}
-            <div className="flex items-center gap-2 p-2.5 sm:p-0 rounded-xl bg-slate-800/40 sm:bg-transparent">
+            <div className="flex items-center gap-2 p-2.5 sm:p-0 rounded-xl bg-slate-800/40 sm:bg-transparent col-span-2 sm:col-span-1">
               <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0 shadow-md">
                 <PhoneCall className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
               </div>
@@ -41,17 +41,33 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, onScrollToWhol
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
                   TỔNG ĐÀI TƯ VẤN
                 </span>
-                <a 
-                  href={STORE_CONFIG.phoneTel}
-                  onClick={() => trackConversion({
-                    eventName: 'click_hotline',
-                    buttonPosition: 'footer',
-                    additionalData: { phone: STORE_CONFIG.hotline }
-                  })}
-                  className="text-xs sm:text-base font-black text-white hover:text-amber-300 transition-colors whitespace-nowrap block mt-0.5"
-                >
-                  {STORE_CONFIG.hotline}
-                </a>
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                  <a 
+                    href={STORE_CONFIG.phoneTel}
+                    onClick={() => trackConversion({
+                      eventName: 'click_hotline',
+                      buttonPosition: 'footer',
+                      additionalData: { phone: STORE_CONFIG.hotline }
+                    })}
+                    className="text-xs sm:text-base font-black text-white hover:text-amber-300 transition-colors whitespace-nowrap"
+                    title={`Gọi hotline 1: ${STORE_CONFIG.hotline}`}
+                  >
+                    {STORE_CONFIG.hotline}
+                  </a>
+                  <span className="text-slate-500 font-bold">-</span>
+                  <a 
+                    href={STORE_CONFIG.phoneTel2}
+                    onClick={() => trackConversion({
+                      eventName: 'click_hotline',
+                      buttonPosition: 'footer',
+                      additionalData: { phone: STORE_CONFIG.hotline2 }
+                    })}
+                    className="text-xs sm:text-base font-black text-white hover:text-amber-300 transition-colors whitespace-nowrap"
+                    title={`Gọi hotline 2: ${STORE_CONFIG.hotline2}`}
+                  >
+                    {STORE_CONFIG.hotline2}
+                  </a>
+                </div>
               </div>
             </div>
 
