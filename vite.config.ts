@@ -4,8 +4,20 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  const landingPath = '/binh-xit-diet-moi-mot-kien-gian-con-trung';
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [{
+      name: 'local-landing-index',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          const [pathname, query] = (req.url ?? '').split(/\?(.*)/s);
+          if (pathname === landingPath || pathname === landingPath + '/') {
+            req.url = landingPath + '/index.html' + (query ? '?' + query : '');
+          }
+          next();
+        });
+      },
+    }, react(), tailwindcss()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

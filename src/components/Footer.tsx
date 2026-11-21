@@ -102,28 +102,29 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, onScrollToWhol
             </div>
 
             {/* 4. Zalo Mua Sỉ */}
-            <div className="flex items-center gap-2 p-2.5 sm:p-0 rounded-xl bg-slate-800/40 sm:bg-transparent">
-              <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md">
+            <a 
+              href={STORE_CONFIG.zaloUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackConversion({
+                eventName: 'click_zalo',
+                buttonPosition: 'footer'
+              })}
+              title={`Chat Zalo Báo Giá Sỉ: ${STORE_CONFIG.zaloDisplay}`}
+              className="flex items-center gap-2 p-2.5 sm:p-2 rounded-xl bg-slate-800/40 hover:bg-slate-800/80 transition-all group cursor-pointer"
+            >
+              <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-blue-600 group-hover:bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-md transition-colors">
                 <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">
+                <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-300 uppercase tracking-wider block truncate">
                   BÁO GIÁ SỈ ZALO
                 </span>
-                <a 
-                  href={STORE_CONFIG.zaloUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackConversion({
-                    eventName: 'click_zalo',
-                    buttonPosition: 'footer'
-                  })}
-                  className="text-xs sm:text-base font-black text-amber-300 hover:text-white transition-colors whitespace-nowrap block mt-0.5"
-                >
-                  {STORE_CONFIG.zalo}
-                </a>
+                <span className="text-xs sm:text-base font-black text-amber-300 group-hover:text-amber-200 transition-colors whitespace-nowrap block mt-0.5">
+                  {STORE_CONFIG.zaloDisplay}
+                </span>
               </div>
-            </div>
+            </a>
 
           </div>
         </div>

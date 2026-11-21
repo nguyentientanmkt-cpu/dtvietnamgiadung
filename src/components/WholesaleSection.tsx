@@ -155,10 +155,11 @@ export const WholesaleSection: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleZaloClick}
+                title={`Nhận Báo Giá Sỉ Qua Zalo: ${STORE_CONFIG.zaloDisplay}`}
                 className="py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer text-center"
               >
                 <MessageCircle className="w-5 h-5 shrink-0" />
-                <span>NHẬN BÁO GIÁ SỈ QUA ZALO</span>
+                <span>BÁO GIÁ SỈ QUA ZALO: {STORE_CONFIG.zaloDisplay}</span>
               </a>
 
               {/* NÚT GỌI HOTLINE */}

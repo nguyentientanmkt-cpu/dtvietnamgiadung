@@ -305,10 +305,11 @@ export const AllProductsCatalogPage: React.FC<AllProductsCatalogPageProps> = ({
                 eventName: 'click_zalo',
                 buttonPosition: 'wholesale_section_zalo'
               })}
+              title={`Chat Zalo Báo Giá Sỉ: ${STORE_CONFIG.zaloDisplay}`}
               className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-md transition-all"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>Báo Giá Zalo</span>
+              <span>Báo Giá Zalo: {STORE_CONFIG.zaloDisplay}</span>
             </a>
 
             <a

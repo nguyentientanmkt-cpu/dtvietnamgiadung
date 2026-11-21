@@ -70,6 +70,7 @@ export const MobileStickyBar: React.FC = () => {
             buttonPosition: 'mobile_sticky_zalo',
             additionalData: { intent: 'Zalo Tư Vấn / Mua Sỉ' }
           })}
+          title={`Chat Zalo: ${STORE_CONFIG.zaloDisplay}`}
           className="flex flex-col items-center justify-center py-1 text-center active:bg-blue-50 transition-colors group cursor-pointer"
         >
           <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center mb-0.5 group-hover:scale-110 transition-transform">
@@ -78,8 +79,8 @@ export const MobileStickyBar: React.FC = () => {
           <span className="text-[10px] font-black text-blue-700 leading-none uppercase">
             Zalo
           </span>
-          <span className="text-[8px] text-slate-400 font-semibold mt-0.5">
-            Báo giá sỉ
+          <span className="text-[8px] text-slate-500 font-bold mt-0.5 whitespace-nowrap">
+            {STORE_CONFIG.zaloDisplay}
           </span>
         </a>
 
@@ -99,8 +100,8 @@ export const MobileStickyBar: React.FC = () => {
           <span className="text-[10px] font-black text-emerald-700 leading-none uppercase">
             Gọi Ngay
           </span>
-          <span className="text-[8px] text-slate-400 font-semibold mt-0.5">
-            0362.495.921
+          <span className="text-[8px] text-slate-500 font-bold mt-0.5 whitespace-nowrap">
+            {STORE_CONFIG.hotline}
           </span>
         </a>
 

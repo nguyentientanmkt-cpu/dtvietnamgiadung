@@ -160,9 +160,10 @@ export const Header: React.FC<HeaderProps> = ({
                 eventName: 'click_zalo',
                 buttonPosition: 'header'
               })}
+              title={`Chat Zalo: ${STORE_CONFIG.zaloDisplay}`}
               className="hidden sm:inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all"
             >
-              <span>Zalo Sỉ &amp; Lẻ</span>
+              <span>Zalo: {STORE_CONFIG.zaloDisplay}</span>
             </a>
           </div>
 

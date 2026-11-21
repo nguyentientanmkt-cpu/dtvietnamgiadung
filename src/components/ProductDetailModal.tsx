@@ -397,10 +397,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={handleZaloClick}
+                  title={`Chat Zalo: ${STORE_CONFIG.zaloDisplay}`}
                   className="flex-1 sm:flex-initial py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-black rounded-lg border border-blue-200 text-xs flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <MessageCircle className="w-3.5 h-3.5 text-blue-600" />
-                  <span>CHAT ZALO</span>
+                  <span>CHAT ZALO: {STORE_CONFIG.zaloDisplay}</span>
                 </a>
 
                 <a

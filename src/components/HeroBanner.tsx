@@ -224,6 +224,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onScrollToWholesale }) =
               additionalData: { target: 'Zalo Báo Giá Sỉ' }
             })}
             className="flex items-center justify-between p-3 sm:p-3.5 bg-blue-50/70 hover:bg-blue-100/80 border border-blue-200 rounded-xl transition-all group"
+            title={`Nhận báo giá sỉ qua Zalo: ${STORE_CONFIG.zaloDisplay}`}
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -237,7 +238,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onScrollToWholesale }) =
                   </span>
                 </div>
                 <div className="text-[11px] sm:text-xs text-blue-700">
-                  Nhận báo giá số lượng lớn qua Zalo
+                  Nhận báo giá qua Zalo: <strong>{STORE_CONFIG.zaloDisplay}</strong>
                 </div>
               </div>
             </div>

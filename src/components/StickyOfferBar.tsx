@@ -33,12 +33,12 @@ export const StickyOfferBar: React.FC<StickyOfferBarProps> = ({
           target="_blank"
           rel="noopener noreferrer"
           className="relative overflow-hidden bg-gradient-to-r from-[#0068FF] to-[#0084FF] hover:from-[#0058e6] hover:to-[#0074f0] text-white flex-1 sm:flex-initial max-w-[210px] sm:max-w-[230px] px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-full text-sm sm:text-base font-black flex items-center justify-center shadow-lg shadow-blue-500/35 hover:shadow-xl hover:shadow-blue-500/50 hover:scale-[1.05] active:scale-95 transition-all duration-250 cursor-pointer border border-blue-400/30"
-          title={`Chat Zalo: ${STORE_CONFIG.hotline}`}
+          title={`Chat Zalo: ${STORE_CONFIG.zaloDisplay}`}
         >
           {/* Hiệu ứng ánh sáng lướt qua (Shimmer sweep) */}
           <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer pointer-events-none"></span>
 
-          <span className="whitespace-nowrap tracking-tight">Chat Zalo</span>
+          <span className="whitespace-nowrap tracking-tight">Chat Zalo: {STORE_CONFIG.zaloDisplay}</span>
         </a>
 
         {/* Nút đóng thanh bar */}

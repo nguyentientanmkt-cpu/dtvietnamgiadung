@@ -2,7 +2,7 @@
 
 ### 1. Giới thiệu dự án
 Landing Page bán hàng **Bình Xịt Diệt Mối Sinh Học Thái Lan Chaendrite 600ml** được xây dựng chuẩn thương mại điện tử (High-converting LadiPage) tại Việt Nam:
-- **Hotline / Zalo chính thức:** `0362.495.921` (Đã được tích hợp vào toàn bộ nút gọi, nút chat Zalo, form đặt hàng và popup thông báo).
+- **Hotline:** `0362.495.921` | **Zalo:** `0358.762.950` (Đã được tích hợp vào toàn bộ nút gọi, nút chat Zalo, form đặt hàng và popup thông báo).
 - **Hình ảnh thương mại sắc nét:** Đã tạo và đóng gói trong thư mục `assets/` (Chai xịt chính hãng, Combo Mua 2 tặng 1, cơ chế xịt vòi kim loại, trước & sau diệt mối, ảnh khách hàng).
 - **Tính năng chuyển đổi cao:**
   + Đồng hồ đếm ngược Flash Sale tạo độ khan hiếm (Urgency Countdown).

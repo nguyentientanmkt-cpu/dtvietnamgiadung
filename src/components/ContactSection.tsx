@@ -139,9 +139,10 @@ export const ContactSection: React.FC = () => {
                   href={STORE_CONFIG.zaloUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title={`Chat Zalo Tư Vấn: ${STORE_CONFIG.zaloDisplay}`}
                   className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-2 rounded-xl text-[11px] font-bold border border-emerald-200 flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <span>💬 Zalo Tư Vấn</span>
+                  <span>💬 Zalo: {STORE_CONFIG.zaloDisplay}</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -178,9 +179,10 @@ export const ContactSection: React.FC = () => {
                     href={STORE_CONFIG.zaloUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    title={`Nhắn Zalo: ${STORE_CONFIG.zaloDisplay}`}
                     className="inline-flex items-center gap-1 bg-[#0068FF] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:bg-blue-600 transition-colors"
                   >
-                    <span>Nhắn Zalo</span>
+                    <span>Nhắn Zalo: {STORE_CONFIG.zaloDisplay}</span>
                   </a>
                   <button
                     onClick={() => {
