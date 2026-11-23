@@ -382,6 +382,184 @@ app.get('/api/telegram-get-updates', async (req, res) => {
   }
 });
 
+// Helper to update .env on backend
+function updateEnvFile(token, chatId) {
+  const envPath = path.join(__dirname, '.env');
+  let content = '';
+  if (fs.existsSync(envPath)) {
+    content = fs.readFileSync(envPath, 'utf8');
+  }
+  if (token) {
+    if (/^TELEGRAM_BOT_TOKEN=.*$/m.test(content)) {
+      content = content.replace(/^TELEGRAM_BOT_TOKEN=.*$/m, `TELEGRAM_BOT_TOKEN="${token}"`);
+    } else {
+      content += `\nTELEGRAM_BOT_TOKEN="${token}"`;
+    }
+    process.env.TELEGRAM_BOT_TOKEN = token;
+  }
+  if (chatId) {
+    if (/^TELEGRAM_CHAT_ID=.*$/m.test(content)) {
+      content = content.replace(/^TELEGRAM_CHAT_ID=.*$/m, `TELEGRAM_CHAT_ID="${chatId}"`);
+    } else {
+      content += `\nTELEGRAM_CHAT_ID="${chatId}"`;
+    }
+    process.env.TELEGRAM_CHAT_ID = chatId;
+  }
+  fs.writeFileSync(envPath, content.trim() + '\n', 'utf8');
+}
+
+// 4. Verify Bot Token (getMe)
+app.all('/api/telegram-verify-token', async (req, res) => {
+  try {
+    let token = (req.body && req.body.token) || req.query.token || process.env.TELEGRAM_BOT_TOKEN;
+    if (token) {
+      token = token.trim();
+      if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1).trim();
+      if (token.startsWith("'") && token.endsWith("'")) token = token.slice(1, -1).trim();
+      if (token.startsWith('bot') && token.includes(':')) token = token.substring(3).trim();
+    }
+
+    if (!token || token === 'your_telegram_bot_token_here') {
+      return res.status(400).json({
+        success: false,
+        error: 'Chưa cung cấp Bot Token. Hãy truyền ?token=... hoặc cấu hình TELEGRAM_BOT_TOKEN trong .env',
+        cause404Explanation: 'Lưu ý: Telegram API chỉ chấp nhận định dạng https://api.telegram.org/bot<TOKEN>/getMe (chữ bot viết liền với Token). Nếu thiếu chữ bot hoặc sai token, Telegram sẽ trả về lỗi 404.'
+      });
+    }
+
+    const resp = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const data = await resp.json();
+
+    if (!resp.ok || !data.ok) {
+      let explanation = data.description || 'Không thể xác thực Bot Token';
+      if (resp.status === 404) {
+        explanation = 'Lỗi 404 Not Found từ Telegram: URL không hợp lệ hoặc Token sai định dạng (kiểm tra lại số ID và ký tự bí mật).';
+      } else if (resp.status === 401 || data.error_code === 401) {
+        explanation = 'Lỗi 401 Unauthorized: Token không đúng hoặc đã bị thu hồi/đổi mới trong @BotFather.';
+      }
+      return res.status(resp.status || 400).json({
+        success: false,
+        httpStatus: resp.status,
+        error: explanation,
+        raw: data
+      });
+    }
+
+    return res.json({
+      success: true,
+      bot: {
+        id: data.result.id,
+        first_name: data.result.first_name,
+        username: data.result.username,
+        can_join_groups: data.result.can_join_groups
+      },
+      message: `Xác thực Bot @${data.result.username} thành công!`
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5. Auto Setup Telegram (Verify -> Fetch Chat ID -> Save .env -> Send Test message)
+app.all('/api/telegram-auto-setup', async (req, res) => {
+  try {
+    let token = (req.body && req.body.token) || req.query.token || process.env.TELEGRAM_BOT_TOKEN;
+    if (token) {
+      token = token.trim();
+      if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1).trim();
+      if (token.startsWith("'") && token.endsWith("'")) token = token.slice(1, -1).trim();
+      if (token.startsWith('bot') && token.includes(':')) token = token.substring(3).trim();
+    }
+
+    if (!token || token === 'your_telegram_bot_token_here') {
+      return res.status(400).json({
+        success: false,
+        error: 'Chưa có TELEGRAM_BOT_TOKEN trong .env hoặc tham số truyền vào'
+      });
+    }
+
+    // Step 1: getMe
+    const meRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const meData = await meRes.json();
+    if (!meRes.ok || !meData.ok) {
+      return res.status(400).json({
+        success: false,
+        step: 'getMe',
+        error: meData.description || 'Lỗi xác thực Token với Telegram'
+      });
+    }
+    const bot = meData.result;
+
+    // Step 2: getUpdates
+    const upRes = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+    const upData = await upRes.json();
+    if (!upRes.ok || !upData.ok) {
+      return res.status(400).json({
+        success: false,
+        step: 'getUpdates',
+        error: upData.description || 'Lỗi lấy updates từ Telegram'
+      });
+    }
+
+    let targetChat = null;
+    if (Array.isArray(upData.result) && upData.result.length > 0) {
+      for (let i = upData.result.length - 1; i >= 0; i--) {
+        const u = upData.result[i];
+        const m = u.message || u.channel_post || u.my_chat_member;
+        if (m && m.chat && m.chat.id) {
+          targetChat = m.chat;
+          break;
+        }
+      }
+    }
+
+    if (!targetChat) {
+      return res.status(200).json({
+        success: false,
+        step: 'waiting_start_message',
+        bot: { username: bot.username, name: bot.first_name },
+        message: `Đã xác thực bot @${bot.username} thành công nhưng chưa nhận được tin nhắn nào từ bạn. Vui lòng mở https://t.me/${bot.username} và bấm START hoặc gửi /start, sau đó tải lại trang này.`
+      });
+    }
+
+    const chatId = String(targetChat.id);
+
+    // Step 3: Save to .env
+    updateEnvFile(token, chatId);
+
+    // Step 4: Send Test Message
+    const timeVN = getVietnamTimeString();
+    const testMsg = `🔔 <b>Kết nối Telegram D&T thành công!</b>\n\n` +
+      `🤖 <b>Bot:</b> @${bot.username} (${bot.first_name})\n` +
+      `👤 <b>Người nhận:</b> ${targetChat.first_name || 'Admin'} (@${targetChat.username || 'N/A'})\n` +
+      `💬 <b>Chat ID:</b> <code>${chatId}</code>\n` +
+      `🕒 <b>Thời gian:</b> ${timeVN}\n\n` +
+      `🚀 <i>Hệ thống thông báo đơn hàng tự động từ website D&T đã sẵn sàng! Mỗi khi khách đặt hàng trên Landing Page, đơn hàng sẽ được gửi trực tiếp tới đây tức thì.</i>`;
+
+    const sendRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: testMsg,
+        parse_mode: 'HTML'
+      })
+    });
+    const sendData = await sendRes.json();
+
+    return res.json({
+      success: true,
+      message: 'Kết nối Telegram D&T thành công!',
+      bot: { username: bot.username, name: bot.first_name, id: bot.id },
+      chat: { id: chatId, title: targetChat.first_name || targetChat.title },
+      telegramMessageSent: sendRes.ok && sendData.ok,
+      envSaved: true
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ---------------- STATIC SERVING & FALLBACK ----------------
 
 const DIST_DIR = path.join(__dirname, 'dist');
