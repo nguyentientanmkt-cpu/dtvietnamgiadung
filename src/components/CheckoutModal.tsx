@@ -73,6 +73,27 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setOrderId(generatedId);
     setOrderConfirmed(true);
 
+    // Send order notification to backend & Telegram Bot
+    try {
+      fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderCode: generatedId,
+          fullName: formData.name,
+          phoneNumber: formData.phone,
+          address: `${formData.address}${formData.ward ? ', ' + formData.ward : ''}${formData.district ? ', ' + formData.district : ''}${formData.city ? ', ' + formData.city : ''}`,
+          note: formData.note,
+          packageName: items.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
+          totalAmount: finalTotal,
+          paymentMethod: formData.paymentMethod,
+          createdAt: new Date().toISOString()
+        })
+      }).catch(apiErr => console.warn('Order API error:', apiErr));
+    } catch (err) {
+      console.warn('Order submission fetch error:', err);
+    }
+
     // Trigger celebratory confetti
     confetti({
       particleCount: 80,

@@ -1631,9 +1631,11 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
     // 3. Form Submission Handling
     var orderForm = document.getElementById('o5h82ysn');
     var submitBtn = document.getElementById('w-jbr44nsy');
+    var isSubmittingOrder = false;
 
     function handleOrderSubmission(e) {
       if (e) e.preventDefault();
+      if (isSubmittingOrder) return;
 
       var nameInput = document.getElementById('wi-ngsfkrmo') || (orderForm ? orderForm.querySelector('input[name="full_name"]') : null);
       var phoneInput = document.getElementById('wi-p9671671') || (orderForm ? orderForm.querySelector('input[name="phone_number"]') : null);
@@ -1666,6 +1668,9 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
         return;
       }
 
+      isSubmittingOrder = true;
+      setTimeout(function() { isSubmittingOrder = false; }, 2500);
+
       var pkgInfo = dtPackagesData[dtSelectedPackage] || dtPackagesData['combo'];
       var orderCode = 'MD-' + Math.floor(100000 + Math.random() * 900000);
 
@@ -1684,7 +1689,7 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
         createdAt: new Date().toISOString()
       };
 
-      // Save to localStorage
+      // 1. Save to localStorage immediately
       try {
         var dtOrders = JSON.parse(localStorage.getItem('dt_orders') || '[]');
         dtOrders.push(orderRecord);
@@ -1697,7 +1702,31 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
         console.warn('Lỗi lưu đơn hàng vào localStorage:', err);
       }
 
-      // Meta Pixel Event (if loaded)
+      // 2. Send Order to Backend API (Saves order & sends Telegram alert to @Dtvietnam_bot)
+      try {
+        fetch('/api/order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(orderRecord)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data && data.success) {
+            console.log('[D&T Order API] Thành công:', data);
+          } else {
+            console.warn('[D&T Order API] Phản hồi từ server:', data);
+          }
+        })
+        .catch(function(apiErr) {
+          console.warn('[D&T Order API] Lỗi mạng khi gửi API (đơn hàng vẫn được lưu an toàn trong localStorage):', apiErr);
+        });
+      } catch (postErr) {
+        console.warn('[D&T Order API] Exception:', postErr);
+      }
+
+      // 3. Meta Pixel Event (if loaded)
       if (typeof window.fbq === 'function') {
         try {
           window.fbq('track', 'Purchase', {
@@ -1712,7 +1741,7 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
         }
       }
 
-      // Populate Modal
+      // 4. Populate Modal
       var mCode = document.getElementById('modal-order-code');
       var mName = document.getElementById('modal-cust-name');
       var mPhone = document.getElementById('modal-cust-phone');
@@ -1727,16 +1756,28 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
       if (mPkg) mPkg.textContent = pkgInfo.name;
       if (mTotal) mTotal.textContent = pkgInfo.totalText;
 
-      // Show Success Modal
+      // 5. Show Success Modal
       var modal = document.getElementById('dt-success-modal');
       if (modal) modal.style.display = 'flex';
 
-      // Reset inputs
+      // 6. Reset inputs
       if (nameInput) nameInput.value = '';
       if (phoneInput) phoneInput.value = '';
       if (addrInput) addrInput.value = '';
       if (noteInput) noteInput.value = '';
     }
+
+    // Expose test function for admin console verification
+    window.testTelegramBot = function() {
+      fetch('/api/test-telegram')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          alert('Kết quả test Telegram:\n' + JSON.stringify(data, null, 2));
+        })
+        .catch(function(err) {
+          alert('Lỗi gọi API test: ' + err.message);
+        });
+    };
 
     if (orderForm) {
       orderForm.addEventListener('submit', handleOrderSubmission);
