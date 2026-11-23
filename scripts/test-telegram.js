@@ -27,7 +27,7 @@ if (!chatId || chatId === 'your_telegram_chat_id_here') {
   process.exit(1);
 }
 
-console.log(`🔑 Bot Token : ${token.substring(0, 8)}...${token.substring(token.length - 4)}`);
+console.log(`🔑 Bot Token : [Đã cấu hình - Bảo mật ẩn 100%]`);
 console.log(`💬 Chat ID   : ${chatId}`);
 
 const timeVN = new Date().toLocaleString('vi-VN', {

@@ -10,9 +10,8 @@ const envPath = path.join(__dirname, '..', '.env');
 dotenv.config({ path: envPath });
 
 // Mask token for security
-function maskToken(t) {
-  if (!t || t.length < 15) return '***';
-  return `${t.substring(0, 6)}...${t.substring(t.length - 4)}`;
+function maskToken() {
+  return '*** [Bảo mật ẩn 100%]';
 }
 
 // Update .env file helper
