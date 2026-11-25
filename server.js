@@ -46,6 +46,9 @@ try {
     if (saved.chatId && (!process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID === 'your_telegram_chat_id_here')) {
       process.env.TELEGRAM_CHAT_ID = saved.chatId;
     }
+    if (saved.googleSheetUrl && (!process.env.GOOGLE_SHEET_WEBAPP_URL || process.env.GOOGLE_SHEET_WEBAPP_URL === 'your_google_sheet_webapp_url_here')) {
+      process.env.GOOGLE_SHEET_WEBAPP_URL = saved.googleSheetUrl;
+    }
   }
 } catch (e) {
   console.warn('[Config Load Error]', e.message);
@@ -219,6 +222,80 @@ async function sendTelegramMessage(text, customToken = null, customChatId = null
   }
 }
 
+// Send order to Google Sheets Web App URL
+async function sendGoogleSheetOrder(order, customUrl = null) {
+  const webappUrl = customUrl || process.env.GOOGLE_SHEET_WEBAPP_URL;
+  const authSecret = process.env.GOOGLE_SHEET_AUTH_SECRET || 'DT_VIETNAM_SECRET_2026';
+
+  if (!webappUrl || webappUrl === 'your_google_sheet_webapp_url_here') {
+    const errorMsg = 'Chưa cấu hình GOOGLE_SHEET_WEBAPP_URL trong .env';
+    console.warn(`[Google Sheets Warning] ${errorMsg}`);
+    return {
+      success: false,
+      configured: false,
+      error: errorMsg
+    };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
+
+  try {
+    const payload = {
+      authKey: authSecret,
+      orderCode: order.orderCode,
+      fullName: order.fullName,
+      phoneNumber: order.phoneNumber,
+      address: order.address,
+      note: order.note || '',
+      packageKey: order.packageKey,
+      packageName: order.packageName,
+      bottleCount: order.bottleCount,
+      totalAmount: order.totalAmount,
+      shippingFee: order.shippingFee || 0,
+      createdAt: order.createdAt
+    };
+
+    const response = await fetch(webappUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+      redirect: 'follow', // Quan trọng: theo sát redirect 302 của Google Apps Script
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      console.error('[Google Sheets API Error]', data);
+      return {
+        success: false,
+        configured: true,
+        error: data.error || 'Lỗi lưu vào Google Sheets',
+        details: data
+      };
+    }
+
+    return {
+      success: true,
+      configured: true,
+      row: data.row || null,
+      message: data.message || 'Đã lưu đơn vào Google Sheets'
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.error('[Google Sheets Network Error]', err.message);
+    return {
+      success: false,
+      configured: true,
+      error: err.name === 'AbortError' ? 'Google Sheets timeout sau 12 giây' : err.message
+    };
+  }
+}
+
 // ---------------- API ENDPOINTS ----------------
 
 // 1. Order submission API
@@ -253,7 +330,7 @@ app.post('/api/order', async (req, res) => {
     // Deduplication check
     const isDuplicate = processedOrders.has(orderCode);
     if (isDuplicate) {
-      console.log(`[Order API] Bỏ qua gửi Telegram do đơn ${orderCode} đã được gửi trước đó (trùng lặp).`);
+      console.log(`[Order API] Bỏ qua gửi Telegram & Google Sheet do đơn ${orderCode} đã được gửi trước đó (trùng lặp).`);
       return res.json({
         success: true,
         orderCode: orderCode,
@@ -269,14 +346,31 @@ app.post('/api/order', async (req, res) => {
     saveOrderToStorage(order);
     console.log(`[Order API] Đã lưu thành công đơn hàng ${orderCode} từ ${fullName} (${phoneNumber})`);
 
-    // 2. Format & Send Telegram notification
+    // 2. Format & Send Telegram notification AND Google Sheets in parallel (Independent pipelines)
     const telegramText = buildTelegramMessage(order);
-    const telegramResult = await sendTelegramMessage(telegramText);
+    const [telegramOutcome, sheetOutcome] = await Promise.allSettled([
+      sendTelegramMessage(telegramText),
+      sendGoogleSheetOrder(order)
+    ]);
+
+    const telegramResult = telegramOutcome.status === 'fulfilled'
+      ? telegramOutcome.value
+      : { success: false, configured: false, error: telegramOutcome.reason?.message };
+
+    const sheetResult = sheetOutcome.status === 'fulfilled'
+      ? sheetOutcome.value
+      : { success: false, configured: false, error: sheetOutcome.reason?.message };
 
     if (telegramResult.success) {
       console.log(`[Order API] Đã gửi thông báo đơn hàng ${orderCode} về Telegram thành công!`);
-    } else {
-      console.warn(`[Order API] Đơn hàng ${orderCode} đã lưu nhưng Telegram thông báo thất bại:`, telegramResult.error);
+    } else if (telegramResult.configured) {
+      console.warn(`[Order API] Telegram thất bại cho đơn ${orderCode}:`, telegramResult.error);
+    }
+
+    if (sheetResult.success) {
+      console.log(`[Order API] Đã lưu đơn hàng ${orderCode} vào Google Sheets thành công (Dòng ${sheetResult.row || 'N/A'})!`);
+    } else if (sheetResult.configured) {
+      console.warn(`[Order API] Google Sheets thất bại cho đơn ${orderCode}:`, sheetResult.error);
     }
 
     // Always return success to client so user experience is smooth and guaranteed
@@ -287,6 +381,11 @@ app.post('/api/order', async (req, res) => {
         sent: telegramResult.success,
         configured: telegramResult.configured,
         error: telegramResult.error || null
+      },
+      googleSheet: {
+        sent: sheetResult.success,
+        configured: sheetResult.configured,
+        error: sheetResult.error || null
       },
       message: 'Đặt hàng thành công!'
     });
@@ -346,6 +445,91 @@ app.all('/api/test-telegram', async (req, res) => {
         details: result.details || null
       });
     }
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2b. Test Google Sheets Web App Connection
+app.all('/api/test-google-sheets', async (req, res) => {
+  try {
+    const customUrl = (req.body && req.body.url) || req.query.url || process.env.GOOGLE_SHEET_WEBAPP_URL;
+
+    if (!customUrl || customUrl === 'your_google_sheet_webapp_url_here') {
+      return res.status(400).json({
+        success: false,
+        error: 'Chưa cấu hình GOOGLE_SHEET_WEBAPP_URL trong .env hoặc tham số ?url=...',
+        instructions: {
+          step1: 'Triển khai Google Apps Script dưới dạng Ứng dụng web (Web App)',
+          step2: 'Đặt quyền truy cập: "Bất kỳ ai" (Anyone)',
+          step3: 'Sao chép URL kết thúc bằng /exec',
+          step4: 'Cấu hình GOOGLE_SHEET_WEBAPP_URL trong .env hoặc gọi API này kèm ?url=...'
+        }
+      });
+    }
+
+    const sampleOrder = {
+      orderCode: `TEST-GS-${Math.floor(100000 + Math.random() * 900000)}`,
+      fullName: 'Kiểm Tra Kết Nối (D&T Vietnam)',
+      phoneNumber: '0362495921',
+      address: '25/54 Bùi Quang Là, P. An Hội Tây, TP.HCM',
+      note: 'Tin nhắn thử nghiệm kiểm tra đồng bộ Google Sheets',
+      packageKey: 'combo',
+      packageName: 'GÓI 2: Mua 2 Tặng 1 (Tổng 3 bình - 578.000đ)',
+      bottleCount: 3,
+      totalAmount: 578000,
+      shippingFee: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    const result = await sendGoogleSheetOrder(sampleOrder, customUrl);
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2c. Save Google Sheets Web App URL directly to backend
+app.all('/api/save-google-sheets-url', async (req, res) => {
+  try {
+    let url = (req.body && req.body.url) || req.query.url || null;
+    if (!url || !url.startsWith('https://script.google.com/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL Web App không hợp lệ. URL phải bắt đầu bằng https://script.google.com/.../exec'
+      });
+    }
+
+    url = url.trim();
+    process.env.GOOGLE_SHEET_WEBAPP_URL = url;
+
+    // Save to .env
+    const envPath = path.join(__dirname, '.env');
+    let content = '';
+    if (fs.existsSync(envPath)) content = fs.readFileSync(envPath, 'utf8');
+    if (/^GOOGLE_SHEET_WEBAPP_URL=.*$/m.test(content)) {
+      content = content.replace(/^GOOGLE_SHEET_WEBAPP_URL=.*$/m, `GOOGLE_SHEET_WEBAPP_URL="${url}"`);
+    } else {
+      content += `\nGOOGLE_SHEET_WEBAPP_URL="${url}"`;
+    }
+    fs.writeFileSync(envPath, content.trim() + '\n', 'utf8');
+
+    // Save to CONFIG_FILE
+    try {
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+      let currentConfig = {};
+      if (fs.existsSync(CONFIG_FILE)) {
+        try { currentConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8') || '{}'); } catch(e) {}
+      }
+      currentConfig.googleSheetUrl = url;
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify(currentConfig, null, 2), 'utf8');
+    } catch(e) {}
+
+    return res.json({
+      success: true,
+      message: 'Đã lưu và kích hoạt GOOGLE_SHEET_WEBAPP_URL thành công trên backend!',
+      url: url
+    });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
