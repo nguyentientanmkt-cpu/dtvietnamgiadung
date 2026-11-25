@@ -34,6 +34,22 @@ setInterval(() => {
 // Persistence store for orders backup
 const DATA_DIR = path.join(__dirname, 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const CONFIG_FILE = path.join(DATA_DIR, 'telegram_config.json');
+
+// Load persistent config if env not set
+try {
+  if (fs.existsSync(CONFIG_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8') || '{}');
+    if (saved.token && (!process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN === 'your_telegram_bot_token_here')) {
+      process.env.TELEGRAM_BOT_TOKEN = saved.token;
+    }
+    if (saved.chatId && (!process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID === 'your_telegram_chat_id_here')) {
+      process.env.TELEGRAM_CHAT_ID = saved.chatId;
+    }
+  }
+} catch (e) {
+  console.warn('[Config Load Error]', e.message);
+}
 
 function saveOrderToStorage(order) {
   try {
@@ -118,7 +134,8 @@ function buildTelegramMessage(order) {
   const paymentText = order.paymentMethod ? (order.paymentMethod.toUpperCase() === 'VIETQR' ? 'Chuyển khoản VietQR' : 'COD') : 'COD';
   const timeText = getVietnamTimeString(order.createdAt);
 
-  let message = `🔔 <b>ĐƠN HÀNG MỚI – D&T</b>\n\n`;
+  const isTest = order.isTest || /test|thử|demo/i.test(order.fullName || '') || /test|thử|demo/i.test(order.note || '');
+  let message = isTest ? `🔔 <b>ĐƠN HÀNG MỚI – D&T [ĐƠN THỬ NGHIỆM]</b>\n\n` : `🔔 <b>ĐƠN HÀNG MỚI – D&T</b>\n\n`;
   message += `👤 <b>Khách hàng:</b> ${customerName}\n\n`;
   message += `📞 <b>SĐT:</b> ${phone}\n\n`;
   message += `📍 <b>Địa chỉ:</b> ${address}\n\n`;
@@ -502,7 +519,10 @@ app.all('/api/telegram-auto-setup', async (req, res) => {
     }
 
     let targetChat = null;
-    if (Array.isArray(upData.result) && upData.result.length > 0) {
+    const directChatId = (req.body && req.body.chat_id) || req.query.chat_id || null;
+    if (directChatId) {
+      targetChat = { id: String(directChatId).trim(), first_name: 'Admin' };
+    } else if (Array.isArray(upData.result) && upData.result.length > 0) {
       for (let i = upData.result.length - 1; i >= 0; i--) {
         const u = upData.result[i];
         const m = u.message || u.channel_post || u.my_chat_member;
@@ -524,8 +544,14 @@ app.all('/api/telegram-auto-setup', async (req, res) => {
 
     const chatId = String(targetChat.id);
 
-    // Step 3: Save to .env
+    // Step 3: Save to .env and data/telegram_config.json
     updateEnvFile(token, chatId);
+    try {
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify({ token, chatId }, null, 2), 'utf8');
+    } catch(e) {
+      console.warn('[Config Save Error]', e.message);
+    }
 
     // Step 4: Send Test Message
     const timeVN = getVietnamTimeString();

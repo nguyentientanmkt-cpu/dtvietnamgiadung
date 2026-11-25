@@ -1674,6 +1674,8 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
       var pkgInfo = dtPackagesData[dtSelectedPackage] || dtPackagesData['combo'];
       var orderCode = 'MD-' + Math.floor(100000 + Math.random() * 900000);
 
+      var isTestOrder = /test|thử|demo/i.test(name) || /test|thử|demo/i.test(note) || /test|thử|demo/i.test(address);
+
       // Order Object
       var orderRecord = {
         orderCode: orderCode,
@@ -1681,6 +1683,7 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
         phoneNumber: cleanPhone,
         address: address,
         note: note,
+        isTest: isTestOrder,
         packageKey: dtSelectedPackage,
         packageName: pkgInfo.name,
         bottleCount: dtSelectedPackage === 'combo' ? 3 : 1,
@@ -1726,8 +1729,8 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
         console.warn('[D&T Order API] Exception:', postErr);
       }
 
-      // 3. Meta Pixel Event (if loaded)
-      if (typeof window.fbq === 'function') {
+      // 3. Meta Pixel Event (Bỏ qua cho đơn test để không ảnh hưởng dữ liệu quảng cáo)
+      if (typeof window.fbq === 'function' && !isTestOrder) {
         try {
           window.fbq('track', 'Purchase', {
             value: pkgInfo.price,
@@ -1739,6 +1742,8 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
         } catch (fbErr) {
           console.warn('FB Pixel Error:', fbErr);
         }
+      } else if (isTestOrder) {
+        console.log('[Meta Pixel] Bỏ qua kích hoạt Purchase Event cho đơn thử nghiệm để bảo vệ số liệu quảng cáo.');
       }
 
       // 4. Populate Modal
