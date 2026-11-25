@@ -922,9 +922,12 @@ app.use((req, res, next) => {
 // Serve dist directory if exists
 if (fs.existsSync(DIST_DIR)) {
   app.use(express.static(DIST_DIR, {
-    maxAge: '1d',
     setHeaders: (res, filePath) => {
-      if (/\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff|woff2)$/i.test(filePath)) {
+      if (/\.html$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      } else if (/\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff|woff2)$/i.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       }
     }
