@@ -3160,6 +3160,79 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
     var submitBtn = document.getElementById('w-jbr44nsy');
     var isSubmittingOrder = false;
 
+    
+    // Client-side Direct Fallback cho Google Sheets & Telegram
+    function triggerClientDirectFallback(order) {
+      console.log('[D&T Client Fallback] Kích hoạt gửi trực tiếp từ trình duyệt...');
+      
+      // 1. Gửi trực tiếp sang Google Apps Script Web App
+      try {
+        var sheetUrl = 'https://script.google.com/macros/s/AKfycbwpOrxWylY9-6POIc-DGNnrePHFZgAIYP4eaniDr0IoKfWSgrWfMjx5uVz6st7ncDQkTw/exec';
+        var sheetPayload = {
+          authKey: 'Tientanmkt2106@@',
+          orderCode: order.orderCode,
+          fullName: order.fullName,
+          phoneNumber: order.phoneNumber,
+          address: order.address,
+          note: order.note || '',
+          packageName: order.packageName,
+          bottleCount: order.bottleCount || (order.packageKey === 'combo' ? 3 : 1),
+          totalAmount: order.totalAmount,
+          createdAt: order.createdAt || new Date().toISOString(),
+          isTest: order.isTest || false
+        };
+
+        fetch(sheetUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sheetPayload)
+        }).then(function() {
+          console.log('[D&T Client Fallback] Đã gửi trực tiếp đơn hàng sang Google Sheets Web App thành công.');
+        }).catch(function(err) {
+          console.warn('[D&T Client Fallback] Lỗi gửi Google Sheets trực tiếp:', err);
+        });
+      } catch (sheetErr) {
+        console.warn('[D&T Client Fallback] Exception Google Sheets:', sheetErr);
+      }
+
+      // 2. Gửi trực tiếp thông báo sang Telegram Bot (@Dtvietnam_bot)
+      try {
+        var tgToken = '9131627139:AAF2CNM5QJTfwJp0cl0S2nfFvG43QLWGoj4';
+        var tgChatId = '7746023646';
+        var isTestLabel = order.isTest ? ' [ĐƠN THỬ NGHIỆM]' : '';
+        var tgText = '🚨 ĐƠN HÀNG MỚI TỪ LANDING PAGE' + isTestLabel + '\n'
+          + '━━━━━━━━━━━━━━━━━━\n'
+          + '🔖 Mã đơn: ' + order.orderCode + '\n'
+          + '👤 Khách hàng: ' + order.fullName + '\n'
+          + '📞 Số điện thoại: ' + order.phoneNumber + '\n'
+          + '📍 Địa chỉ: ' + order.address + '\n'
+          + '📦 Gói chọn: ' + order.packageName + '\n'
+          + '💰 Tổng thanh toán: ' + Number(order.totalAmount).toLocaleString('vi-VN') + 'đ (COD)\n'
+          + (order.note ? ('📝 Ghi chú: ' + order.note + '\n') : '')
+          + '⏰ Thời gian: ' + new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) + '\n'
+          + '━━━━━━━━━━━━━━━━━━\n'
+          + '✅ Nguồn: Landing Page Xịt Mối Chaindrite Thái Lan';
+
+        fetch('https://api.telegram.org/bot' + tgToken + '/sendMessage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: tgChatId,
+            text: tgText
+          })
+        }).then(function(res) {
+          return res.json();
+        }).then(function(tgData) {
+          console.log('[D&T Client Fallback] Đã gửi trực tiếp thông báo Telegram Bot thành công:', tgData);
+        }).catch(function(tgErr) {
+          console.warn('[D&T Client Fallback] Lỗi gửi Telegram trực tiếp:', tgErr);
+        });
+      } catch (tgEx) {
+        console.warn('[D&T Client Fallback] Exception Telegram:', tgEx);
+      }
+    }
+
     function handleOrderSubmission(e) {
       if (e) e.preventDefault();
       if (isSubmittingOrder) return;
@@ -3246,6 +3319,18 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
           if (data && data.success) {
             console.log('[D&T Order API] Thành công:', data);
 
+            // Kiểm tra xem backend host đã gửi thành công sang Telegram và Google Sheet chưa
+            // Nếu host backend trả về false (do môi trường host thiếu biến môi trường), client tự động gửi trực tiếp dự phòng!
+            var needTgFallback = !data.telegram || data.telegram.sent === false;
+            var needSheetFallback = !data.googleSheet || data.googleSheet.sent === false;
+            if (needTgFallback || needSheetFallback) {
+              console.warn('[D&T Client Fallback] Backend host chưa gửi được (' +
+                (needTgFallback ? 'Telegram: false ' : '') +
+                (needSheetFallback ? 'GoogleSheet: false' : '') +
+                '), kích hoạt gửi dự phòng trực tiếp từ trình duyệt...');
+              triggerClientDirectFallback(orderRecord);
+            }
+
             // Google Tag Manager Event: order_success (Chỉ kích hoạt khi hệ thống xác nhận gửi và lưu đơn hàng thành công)
             try {
               window._gtmTrackedOrders = window._gtmTrackedOrders || {};
@@ -3269,14 +3354,17 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
               console.warn('[GTM DataLayer Warning]', gtmErr);
             }
           } else {
-            console.warn('[D&T Order API] Phản hồi từ server:', data);
+            console.warn('[D&T Order API] Phản hồi từ server không thành công, kích hoạt gửi dự phòng:', data);
+            triggerClientDirectFallback(orderRecord);
           }
         })
         .catch(function(apiErr) {
-          console.warn('[D&T Order API] Lỗi mạng khi gửi API (đơn hàng vẫn được lưu an toàn trong localStorage):', apiErr);
+          console.warn('[D&T Order API] Lỗi mạng khi gọi /api/order, kích hoạt gửi dự phòng trực tiếp:', apiErr);
+          triggerClientDirectFallback(orderRecord);
         });
       } catch (postErr) {
-        console.warn('[D&T Order API] Exception:', postErr);
+        console.warn('[D&T Order API] Exception, kích hoạt gửi dự phòng trực tiếp:', postErr);
+        triggerClientDirectFallback(orderRecord);
       }
 
       // 3. Meta Pixel Event (Bỏ qua cho đơn test để không ảnh hưởng dữ liệu quảng cáo)

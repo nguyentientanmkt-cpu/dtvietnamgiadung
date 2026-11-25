@@ -61,6 +61,31 @@ try {
   console.warn('[Config Load Error]', e.message);
 }
 
+// Cấu hình mặc định dự phòng của D&T Việt Nam (Đảm bảo production hosting luôn kết nối thành công kể cả khi chưa cấu hình biến môi trường trên dashboard host)
+const DEFAULT_TELEGRAM_TOKEN = '9131627139:AAF2CNM5QJTfwJp0cl0S2nfFvG43QLWGoj4';
+const DEFAULT_TELEGRAM_CHAT = '7746023646';
+const DEFAULT_GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwpOrxWylY9-6POIc-DGNnrePHFZgAIYP4eaniDr0IoKfWSgrWfMjx5uVz6st7ncDQkTw/exec';
+const DEFAULT_GOOGLE_SHEET_SECRET = 'Tientanmkt2106@@';
+
+if (!process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN === 'your_telegram_bot_token_here') {
+  process.env.TELEGRAM_BOT_TOKEN = DEFAULT_TELEGRAM_TOKEN;
+}
+if (!process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID === 'your_telegram_chat_id_here') {
+  process.env.TELEGRAM_CHAT_ID = DEFAULT_TELEGRAM_CHAT;
+}
+if (!process.env.GOOGLE_SHEETS_WEBHOOK_URL || process.env.GOOGLE_SHEETS_WEBHOOK_URL === 'your_google_sheet_webapp_url_here') {
+  process.env.GOOGLE_SHEETS_WEBHOOK_URL = DEFAULT_GOOGLE_SHEET_URL;
+}
+if (!process.env.GOOGLE_SHEET_WEBAPP_URL || process.env.GOOGLE_SHEET_WEBAPP_URL === 'your_google_sheet_webapp_url_here') {
+  process.env.GOOGLE_SHEET_WEBAPP_URL = DEFAULT_GOOGLE_SHEET_URL;
+}
+if (!process.env.GOOGLE_SHEETS_AUTH_SECRET) {
+  process.env.GOOGLE_SHEETS_AUTH_SECRET = DEFAULT_GOOGLE_SHEET_SECRET;
+}
+if (!process.env.GOOGLE_SHEET_AUTH_SECRET) {
+  process.env.GOOGLE_SHEET_AUTH_SECRET = DEFAULT_GOOGLE_SHEET_SECRET;
+}
+
 function saveOrderToStorage(order) {
   try {
     if (!fs.existsSync(DATA_DIR)) {
