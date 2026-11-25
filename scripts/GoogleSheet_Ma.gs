@@ -4,28 +4,24 @@
  * TAB NHẬN ĐƠN: "DATA LADIPAGE - XỊT MỐI"
  * ==============================================================================
  * 
- * QUY TẮC BẢNG TÍNH:
- * - Tiêu đề bảng ở Dòng 5.
- * - Dữ liệu bắt đầu ghi từ Dòng 6 (Tuyệt đối không ghi đè 5 dòng đầu).
- * - Chống trùng đơn BẰNG MÃ ĐƠN HÀNG (orderCode duy nhất). Không chặn theo SĐT
- *   hay Combo để khách cũ có thể đặt lại đơn mới bình thường.
- * - Mã xác thực bảo mật AUTH_SECRET được đọc từ Script Properties.
- * 
- * ÁNH XẠ CỘT:
- * - B: Ngày tạo (dd/MM/yyyy HH:mm:ss)
- * - C: Kênh đơn (Website)
- * - D: Khách hàng
- * - E: Số điện thoại (giữ nguyên số 0 ở đầu)
- * - G: Combo (Mua 2 tặng 1 / 1 bình)
- * - H: Địa chỉ (+ Ghi chú + [Mã đơn])
- * - J: Giá trị đơn (578000 / 289000)
- * - K: Tình trạng (Chờ xác nhận)
- * 
- * BẢO LƯU 100%: Cột A, F, I (Không ghi đè, bảo toàn công thức/định dạng có sẵn)
+ * QUY TẮC NGHIÊM NGẶT:
+ * 1. Mở bảng tính bằng: SpreadsheetApp.openById(SPREADSHEET_ID).
+ * 2. Cấu hình bảo mật qua Script Properties: SPREADSHEET_ID và AUTH_SECRET (Không dùng mã mặc định trong code).
+ * 3. Chỉ nhận chính xác tab: "DATA LADIPAGE - XỊT MỐI".
+ * 4. Tiêu đề bảng ở Dòng 5. Dữ liệu bắt đầu ghi từ Dòng 6 (Tuyệt đối không đè 5 dòng đầu).
+ * 5. Tìm dòng trống thông minh: Kiểm tra toàn bộ các cột cần ghi (B, C, D, E, G, H, J, K),
+ *    đảm bảo không có dữ liệu và không có công thức cũ mới được ghi.
+ * 6. Bắt buộc có mã đơn hàng (orderCode) và chống trùng trên TOÀN BỘ dữ liệu của sheet (không giới hạn dòng).
+ * 7. Kiểm tra đầy đủ thông tin khách hàng, chống tấn công chèn công thức (Formula Injection).
+ * 8. Chỉ chấp nhận đúng 2 gói giá quy định: Gói 1 bình (289.000đ) và Gói Mua 2 tặng 1 (578.000đ).
+ * 9. Giữ nguyên 100% các cột A, F, I (Bảo toàn nguyên vẹn công thức/định dạng có sẵn).
  */
 
 var TARGET_SHEET_NAME = 'DATA LADIPAGE - XỊT MỐI';
-var DATA_START_ROW = 6; // Tiêu đề ở dòng 5, dữ liệu bắt đầu ghi từ dòng 6
+var DATA_START_ROW = 6; // Dữ liệu bắt đầu từ dòng 6
+
+// Các cột mục tiêu cần ghi: B(2), C(3), D(4), E(5), G(7), H(8), J(10), K(11)
+var WRITE_COLUMN_INDEXES = [2, 3, 4, 5, 7, 8, 10, 11];
 
 /**
  * 1. Xử lý yêu cầu POST từ Backend website D&T
@@ -33,23 +29,31 @@ var DATA_START_ROW = 6; // Tiêu đề ở dòng 5, dữ liệu bắt đầu ghi
 function doPost(e) {
   var lock = LockService.getScriptLock();
   try {
-    // Khóa tránh xung đột khi nhiều khách bấm đặt hàng cùng lúc (chờ tối đa 15s)
+    // Khóa tránh xung đột khi nhiều khách bấm đặt hàng cùng một lúc (chờ tối đa 15s)
     lock.waitLock(15000);
 
-    // Kiểm tra cấu hình bảo mật trong Script Properties
+    // Đọc cấu hình từ Script Properties
     var scriptProps = PropertiesService.getScriptProperties();
+    var spreadsheetId = scriptProps.getProperty('SPREADSHEET_ID');
     var authSecret = scriptProps.getProperty('AUTH_SECRET');
+
+    if (!spreadsheetId) {
+      return responseJSON({
+        success: false,
+        error: 'Chưa cấu hình SPREADSHEET_ID trong Script Properties của Google Apps Script.'
+      });
+    }
 
     if (!authSecret) {
       return responseJSON({
         success: false,
-        error: 'Chưa cấu hình thuộc tính AUTH_SECRET trong Script Properties của Google Apps Script.'
+        error: 'Chưa cấu hình AUTH_SECRET trong Script Properties của Google Apps Script.'
       });
     }
 
-    // Kiểm tra dữ liệu đầu vào
+    // Kiểm tra dữ liệu gửi đến
     if (!e || !e.postData || !e.postData.contents) {
-      return responseJSON({ success: false, error: 'Không nhận được dữ liệu đơn hàng.' });
+      return responseJSON({ success: false, error: 'Không nhận được dữ liệu đơn hàng (postData trống).' });
     }
 
     var data = {};
@@ -59,7 +63,7 @@ function doPost(e) {
       return responseJSON({ success: false, error: 'Dữ liệu JSON không hợp lệ: ' + err.message });
     }
 
-    // Kiểm tra mã xác thực từ backend gửi lên
+    // Xác thực mã bí mật AUTH_SECRET
     var clientSecret = (data.authKey || data.authSecret || '').toString().trim();
     if (clientSecret !== authSecret.trim()) {
       return responseJSON({
@@ -68,8 +72,19 @@ function doPost(e) {
       });
     }
 
+    // Mở bảng tính bằng SpreadsheetApp.openById()
+    var ss;
+    try {
+      ss = SpreadsheetApp.openById(spreadsheetId.trim());
+    } catch (ssErr) {
+      return responseJSON({
+        success: false,
+        error: 'Không thể mở bảng tính với SPREADSHEET_ID đã cấu hình: ' + ssErr.message
+      });
+    }
+
     // Thực hiện ghi đơn hàng vào bảng tính
-    var result = processAppendOrder(data);
+    var result = processAppendOrder(ss, data);
     return responseJSON(result);
 
   } catch (error) {
@@ -86,14 +101,18 @@ function doPost(e) {
  */
 function doGet(e) {
   var scriptProps = PropertiesService.getScriptProperties();
-  var hasAuth = !!scriptProps.getProperty('AUTH_SECRET');
+  var spreadsheetId = scriptProps.getProperty('SPREADSHEET_ID');
+  var authSecret = scriptProps.getProperty('AUTH_SECRET');
 
   return responseJSON({
     status: 'ok',
     message: 'Google Apps Script Web App D&T đang hoạt động sẵn sàng nhận đơn!',
     sheetTarget: TARGET_SHEET_NAME,
     dataStartRow: DATA_START_ROW,
-    authSecretConfigured: hasAuth,
+    configured: {
+      hasSpreadsheetId: !!spreadsheetId,
+      hasAuthSecret: !!authSecret
+    },
     timestamp: new Date().toISOString()
   });
 }
@@ -101,86 +120,100 @@ function doGet(e) {
 /**
  * 3. Logic xử lý ghi đơn vào bảng tính
  */
-function processAppendOrder(data) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = findTargetSheet(ss, TARGET_SHEET_NAME);
-
+function processAppendOrder(ss, data) {
+  // Chỉ nhận chính xác tab: "DATA LADIPAGE - XỊT MỐI"
+  var sheet = ss.getSheetByName(TARGET_SHEET_NAME);
   if (!sheet) {
     return {
       success: false,
-      error: 'Không tìm thấy tab sheet "' + TARGET_SHEET_NAME + '". Vui lòng kiểm tra lại tên tab.'
+      error: 'Không tìm thấy tab sheet chính xác "' + TARGET_SHEET_NAME + '" trong bảng tính. Vui lòng kiểm tra lại tên tab.'
     };
   }
 
-  // Thu thập và chuẩn hóa dữ liệu
-  var fullName = (data.fullName || '').toString().trim();
-  var phoneRaw = (data.phoneNumber || '').toString().trim();
-  var address = (data.address || '').toString().trim();
-  var note = (data.note || '').toString().trim();
+  // 1. Kiểm tra bắt buộc có mã đơn hàng (orderCode)
   var orderCode = (data.orderCode || '').toString().trim();
-
-  if (!fullName) {
-    return { success: false, error: 'Thiếu họ tên khách hàng.' };
-  }
-  if (!phoneRaw) {
-    return { success: false, error: 'Thiếu số điện thoại.' };
-  }
-
-  // Chuẩn hóa số điện thoại: luôn giữ số 0 ở đầu
-  var cleanPhone = phoneRaw.replace(/[\s.-]/g, '');
-  if (cleanPhone.startsWith('84')) {
-    cleanPhone = '0' + cleanPhone.substring(2);
-  } else if (!cleanPhone.startsWith('0') && cleanPhone.length > 0) {
-    cleanPhone = '0' + cleanPhone;
+  if (!orderCode || orderCode.length < 3) {
+    return {
+      success: false,
+      error: 'Bắt buộc phải có mã đơn hàng duy nhất (orderCode).'
+    };
   }
 
-  // CHỐNG TRÙNG ĐƠN HÀNG: Dựa vào mã đơn duy nhất (orderCode)
-  if (orderCode && isDuplicateOrder(sheet, orderCode)) {
+  // 2. Chống trùng đơn hàng trên TOÀN BỘ dữ liệu của sheet (không giới hạn dòng)
+  if (isDuplicateOrderFullSheet(sheet, orderCode)) {
     return {
       success: true,
       duplicate: true,
       orderCode: orderCode,
-      message: 'Mã đơn hàng ' + orderCode + ' đã được ghi nhận trước đó, bỏ qua không ghi trùng.'
+      message: 'Mã đơn hàng ' + orderCode + ' đã tồn tại trong bảng tính, bỏ qua không ghi trùng.'
     };
   }
 
-  // Chuẩn hóa thông tin Combo (Cột G) và Giá bán (Cột J)
-  var comboText = '';
-  var priceNumber = 578000;
+  // 3. Kiểm tra đầy đủ thông tin khách hàng
+  var fullName = (data.fullName || '').toString().trim();
+  var phoneRaw = (data.phoneNumber || '').toString().trim();
+  var address = (data.address || '').toString().trim();
+  var note = (data.note || '').toString().trim();
+
+  if (!fullName || fullName.length < 2) {
+    return { success: false, error: 'Họ tên khách hàng không hợp lệ (tối thiểu 2 ký tự).' };
+  }
+
+  var cleanPhone = phoneRaw.replace(/[\s.-]/g, '');
+  var phoneRegex = /^(0|84)(3[2-9]|5[25689]|7[06-9]|8[1-9]|9[0-9])[0-9]{7}$/;
+  if (!phoneRegex.test(cleanPhone)) {
+    return { success: false, error: 'Số điện thoại không hợp lệ (phải là số di động 10 chữ số tại VN).' };
+  }
+  // Giữ số 0 ở đầu
+  if (cleanPhone.startsWith('84')) {
+    cleanPhone = '0' + cleanPhone.substring(2);
+  }
+
+  if (!address || address.length < 4) {
+    return { success: false, error: 'Địa chỉ nhận hàng không được để trống (tối thiểu 4 ký tự).' };
+  }
+
+  // 4. Chỉ chấp nhận đúng hai gói giá: Gói 1 bình 289K hoặc Gói Mua 2 tặng 1 578K
   var pkgKey = (data.packageKey || '').toString().toLowerCase();
   var pkgName = (data.packageName || '').toString();
+  var amount = Number(data.totalAmount) || 0;
 
-  if (pkgKey === 'combo' || pkgName.toLowerCase().indexOf('mua 2') !== -1 || pkgName.indexOf('578') !== -1) {
+  var comboText = '';
+  var priceNumber = 0;
+
+  if (amount === 578000 || pkgKey === 'combo' || pkgName.toLowerCase().indexOf('mua 2') !== -1 || pkgName.indexOf('578') !== -1) {
     comboText = 'Mua 2 tặng 1 (3 bình 600ml)';
     priceNumber = 578000;
-  } else if (pkgKey === 'single' || pkgName.toLowerCase().indexOf('1 bình') !== -1 || pkgName.indexOf('289') !== -1) {
+  } else if (amount === 289000 || pkgKey === 'single' || pkgName.toLowerCase().indexOf('1 bình') !== -1 || pkgName.indexOf('289') !== -1) {
     comboText = '1 bình 600ml';
     priceNumber = 289000;
   } else {
-    comboText = pkgName || 'Combo Mua 2 Tặng 1';
-    priceNumber = Number(data.totalAmount) || 578000;
+    return {
+      success: false,
+      error: 'Giá trị đơn hàng không hợp lệ. Hệ thống chỉ chấp nhận 2 gói: Gói 1 bình (289.000đ) hoặc Gói Mua 2 tặng 1 (578.000đ).'
+    };
   }
 
-  // Địa chỉ chi tiết + ghi chú + mã đơn định danh (Cột H)
-  var fullAddress = address;
-  if (note) {
-    fullAddress += ' (Ghi chú: ' + note + ')';
+  // 5. Ngăn chặn tấn công chèn công thức (Formula Injection Prevention)
+  var safeFullName = sanitizeFormulaInput(fullName);
+  var safeAddress = sanitizeFormulaInput(address);
+  var safeNote = sanitizeFormulaInput(note);
+  var safeOrderCode = sanitizeFormulaInput(orderCode);
+
+  var fullAddress = safeAddress;
+  if (safeNote) {
+    fullAddress += ' (Ghi chú: ' + safeNote + ')';
   }
-  if (orderCode) {
-    fullAddress += ' [Mã đơn: ' + orderCode + ']';
+  if (safeOrderCode) {
+    fullAddress += ' [Mã đơn: ' + safeOrderCode + ']';
   }
 
-  // Ngày tạo theo giờ Việt Nam UTC+7 (Cột B)
+  // 6. Tìm dòng trống từ dòng 6 (Kiểm tra tất cả các cột cần ghi: B, C, D, E, G, H, J, K)
+  var targetRow = findSafeEmptyRow(sheet);
+
+  // 7. Ghi chính xác vào từng ô (GIỮ NGUYÊN CỘT A, F, I)
   var orderTime = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss');
 
-  // Tìm dòng trống đầu tiên để chèn (bắt đầu từ Dòng 6)
-  var targetRow = findFirstEmptyRow(sheet);
-
-  // --------------------------------------------------------------------------
-  // GHI CHÍNH XÁC VÀO CÁC CỘT QUY ĐỊNH (BẢO LƯU 100% CỘT A, F, I)
-  // --------------------------------------------------------------------------
-  // Cột A (1): BỎ QUA - GIỮ NGUYÊN (STT hoặc công thức tự động)
-  
   // Cột B (2): Ngày tạo
   sheet.getRange(targetRow, 2).setValue(orderTime);
 
@@ -188,12 +221,12 @@ function processAppendOrder(data) {
   sheet.getRange(targetRow, 3).setValue('Website');
 
   // Cột D (4): Khách hàng
-  sheet.getRange(targetRow, 4).setValue(fullName);
+  sheet.getRange(targetRow, 4).setValue(safeFullName);
 
-  // Cột E (5): Số điện thoại (format chuỗi '@' để luôn bảo toàn số 0 ở đầu)
+  // Cột E (5): Số điện thoại (format văn bản '@' và thêm dấu nháy đơn để luôn bảo toàn số 0 ở đầu)
   sheet.getRange(targetRow, 5).setNumberFormat('@').setValue("'" + cleanPhone);
 
-  // Cột F (6): BỎ QUA - GIỮ NGUYÊN
+  // Cột F (6): BỎ QUA - GIỮ NGUYÊN 100%
 
   // Cột G (7): Combo
   sheet.getRange(targetRow, 7).setValue(comboText);
@@ -201,7 +234,7 @@ function processAppendOrder(data) {
   // Cột H (8): Địa chỉ
   sheet.getRange(targetRow, 8).setValue(fullAddress);
 
-  // Cột I (9): BỎ QUA - GIỮ NGUYÊN
+  // Cột I (9): BỎ QUA - GIỮ NGUYÊN 100%
 
   // Cột J (10): Giá trị đơn
   sheet.getRange(targetRow, 10).setValue(priceNumber);
@@ -209,12 +242,12 @@ function processAppendOrder(data) {
   // Cột K (11): Tình trạng
   sheet.getRange(targetRow, 11).setValue('Chờ xác nhận');
 
+  // Cột A (1): BỎ QUA - GIỮ NGUYÊN 100%
+
   // Lưu mã đơn vào Cache trong 6 giờ để chống spam click tức thì
-  if (orderCode) {
-    try {
-      CacheService.getScriptCache().put('PROCESSED_' + orderCode, '1', 21600);
-    } catch (ignore) {}
-  }
+  try {
+    CacheService.getScriptCache().put('ORDER_' + orderCode, '1', 21600);
+  } catch (ignore) {}
 
   return {
     success: true,
@@ -229,77 +262,89 @@ function processAppendOrder(data) {
 }
 
 /**
- * Tìm tab sheet theo tên chính xác hoặc không phân biệt hoa thường
+ * Ngăn chặn tấn công chèn công thức (Formula Injection)
+ * Nếu ký tự đầu là =, +, -, @, tab, xuống dòng -> thêm dấu nháy đơn ' ở trước để hiển thị dạng text
  */
-function findTargetSheet(ss, targetName) {
-  var sheet = ss.getSheetByName(targetName);
-  if (sheet) return sheet;
-
-  var allSheets = ss.getSheets();
-  for (var i = 0; i < allSheets.length; i++) {
-    var name = allSheets[i].getName().trim().toUpperCase();
-    if (name === targetName.trim().toUpperCase() || name.indexOf('XỊT MỐI') !== -1) {
-      return allSheets[i];
-    }
+function sanitizeFormulaInput(val) {
+  if (val === null || val === undefined) return '';
+  var s = String(val).trim();
+  if (/^[=+\-@\t\r]/.test(s)) {
+    return "'" + s;
   }
-  return null;
+  return s;
 }
 
 /**
- * Tìm dòng trống đầu tiên bắt đầu từ Dòng 6 (Không bao giờ đè lên 5 dòng đầu)
+ * Tìm dòng trống an toàn từ dòng 6:
+ * Kiểm tra tất cả các cột cần ghi (B, C, D, E, G, H, J, K).
+ * Đảm bảo dòng đó không chứa bất kỳ giá trị nào và không chứa bất kỳ công thức cũ nào.
  */
-function findFirstEmptyRow(sheet) {
+function findSafeEmptyRow(sheet) {
   var lastRow = sheet.getLastRow();
   if (lastRow < DATA_START_ROW) {
     return DATA_START_ROW; // Dòng 6
   }
 
   var numRows = lastRow - DATA_START_ROW + 1;
-  // Lấy dữ liệu cột B (Ngày tạo) và cột D (Khách hàng) từ dòng 6 đến lastRow
-  var rangeValues = sheet.getRange(DATA_START_ROW, 2, numRows, 3).getValues();
+  // Lấy dữ liệu và công thức của 11 cột từ dòng 6 đến lastRow
+  var values = sheet.getRange(DATA_START_ROW, 1, numRows, 11).getValues();
+  var formulas = sheet.getRange(DATA_START_ROW, 1, numRows, 11).getFormulas();
 
-  for (var i = 0; i < rangeValues.length; i++) {
-    var colB = rangeValues[i][0]; // Cột B
-    var colD = rangeValues[i][2]; // Cột D
-    if (!colB && !colD) {
-      return DATA_START_ROW + i; // Tìm thấy dòng trống ở giữa
+  for (var r = 0; r < numRows; r++) {
+    var isRowSafeAndEmpty = true;
+
+    // Kiểm tra tất cả các cột cần ghi: B(2), C(3), D(4), E(5), G(7), H(8), J(10), K(11)
+    for (var c = 0; c < WRITE_COLUMN_INDEXES.length; c++) {
+      var colIdx = WRITE_COLUMN_INDEXES[c] - 1; // 0-based index
+      var val = values[r][colIdx];
+      var formula = formulas[r][colIdx];
+
+      // Nếu ô có giá trị hoặc có công thức -> dòng này không hoàn toàn trống
+      if ((val !== '' && val !== null && val !== undefined) || (formula !== '' && formula !== null)) {
+        isRowSafeAndEmpty = false;
+        break;
+      }
+    }
+
+    if (isRowSafeAndEmpty) {
+      return DATA_START_ROW + r; // Tìm thấy dòng trống an toàn
     }
   }
 
-  return lastRow + 1; // Nối tiếp ở cuối
+  return lastRow + 1; // Nối tiếp ở cuối bảng
 }
 
 /**
- * Chống trùng đơn hàng BẰNG MÃ ĐƠN HÀNG (orderCode duy nhất)
+ * Chống trùng đơn hàng BẰNG MÃ ĐƠN HÀNG (orderCode duy nhất) trên TOÀN BỘ dữ liệu của sheet
  */
-function isDuplicateOrder(sheet, orderCode) {
+function isDuplicateOrderFullSheet(sheet, orderCode) {
   if (!orderCode) return false;
 
-  // 1. Kiểm tra Cache tức thì (bắt các lần click liên tiếp)
+  // 1. Kiểm tra Cache tức thì
   try {
     var cache = CacheService.getScriptCache();
-    if (cache.get('PROCESSED_' + orderCode)) {
+    if (cache.get('ORDER_' + orderCode)) {
       return true;
     }
   } catch (ignore) {}
 
-  // 2. Quét tối đa 200 dòng dữ liệu gần nhất trong bảng tính từ dòng 6 trở đi
+  // 2. Quét TOÀN BỘ các dòng từ dòng 6 đến lastRow (không giới hạn 200 dòng)
   var lastRow = sheet.getLastRow();
   if (lastRow < DATA_START_ROW) return false;
 
-  var numRows = lastRow - DATA_START_ROW + 1;
-  var checkRows = Math.min(numRows, 200);
-  var startRow = lastRow - checkRows + 1;
+  var totalRows = lastRow - DATA_START_ROW + 1;
 
-  // Quét Cột A (nếu chứa mã đơn) và Cột H (Địa chỉ có kèm mã đơn)
-  var colA = sheet.getRange(startRow, 1, checkRows, 1).getValues();
-  var colH = sheet.getRange(startRow, 8, checkRows, 1).getValues();
+  // Quét toàn bộ Cột A (Mã đơn nếu có) và Cột H (Địa chỉ có chứa mã đơn)
+  var colA = sheet.getRange(DATA_START_ROW, 1, totalRows, 1).getValues();
+  var colH = sheet.getRange(DATA_START_ROW, 8, totalRows, 1).getValues();
 
-  for (var i = 0; i < checkRows; i++) {
+  var cleanCode = String(orderCode).trim();
+
+  for (var i = 0; i < totalRows; i++) {
     var valA = (colA[i][0] || '').toString().trim();
     var valH = (colH[i][0] || '').toString();
 
-    if (valA === orderCode || valH.indexOf(orderCode) !== -1) {
+    if (valA === cleanCode || valH.indexOf(cleanCode) !== -1) {
       return true;
     }
   }
@@ -318,22 +363,31 @@ function responseJSON(obj) {
 /**
  * ==============================================================================
  * HÀM CHẠY THỬ NGHIỆM TRỰC TIẾP TRONG APPS SCRIPT EDITOR
- * Nhấn "Chạy" (Run) với hàm testAppendOrder để thử thêm 1 dòng mẫu vào bảng
+ * Nhấn "Chạy" (Run) với hàm testAppendOrder để thử thêm 1 dòng mẫu an toàn từ Dòng 6
  * ==============================================================================
  */
 function testAppendOrder() {
+  var scriptProps = PropertiesService.getScriptProperties();
+  var spreadsheetId = scriptProps.getProperty('SPREADSHEET_ID');
+
+  if (!spreadsheetId) {
+    Logger.log('LỖI: Bạn chưa thêm SPREADSHEET_ID vào Script Properties (Cài đặt dự án -> Thuộc tính tập lệnh).');
+    return;
+  }
+
+  var ss = SpreadsheetApp.openById(spreadsheetId.trim());
   var sample = {
-    orderCode: 'TEST-SHEET-' + Math.floor(Math.random() * 90000 + 10000),
+    orderCode: 'MD-TEST-' + Math.floor(Math.random() * 90000 + 10000),
     fullName: 'Nguyễn Văn Test (Thử Nghiệm Dòng 6)',
     phoneNumber: '0362495921',
     address: '25/54 Bùi Quang Là, P. An Hội Tây, TP.HCM',
-    note: 'Kiểm tra chèn từ dòng 6 và bảo toàn cột A, F, I',
+    note: 'Kiểm tra chèn dòng an toàn từ dòng 6 và bảo toàn cột A, F, I',
     packageKey: 'combo',
     packageName: 'GÓI 2: Mua 2 Tặng 1 (Tổng 3 bình - 578.000đ)',
     totalAmount: 578000
   };
 
-  var res = processAppendOrder(sample);
+  var res = processAppendOrder(ss, sample);
   Logger.log('Kết quả kiểm tra: ' + JSON.stringify(res));
   return res;
 }

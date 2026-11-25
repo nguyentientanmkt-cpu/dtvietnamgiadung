@@ -296,6 +296,32 @@ async function sendGoogleSheetOrder(order, customUrl = null) {
   }
 }
 
+// Helper for resilient retry with exponential backoff
+async function sendWithRetry(name, fn, maxRetries = 2, delayMs = 1000) {
+  let lastResult = { success: false, configured: false };
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      lastResult = await fn();
+      if (lastResult.success || !lastResult.configured) {
+        return lastResult;
+      }
+      if (attempt < maxRetries) {
+        console.warn(`[${name} Retry] Lần thử ${attempt} thất bại (${lastResult.error}), đang thử lại sau ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+        delayMs *= 2;
+      }
+    } catch (err) {
+      lastResult = { success: false, configured: true, error: err.message };
+      if (attempt < maxRetries) {
+        console.warn(`[${name} Exception] Lần thử ${attempt} gặp lỗi, thử lại sau ${delayMs}ms:`, err.message);
+        await new Promise(r => setTimeout(r, delayMs));
+        delayMs *= 2;
+      }
+    }
+  }
+  return lastResult;
+}
+
 // ---------------- API ENDPOINTS ----------------
 
 // 1. Order submission API
@@ -342,15 +368,15 @@ app.post('/api/order', async (req, res) => {
     // Mark as processed
     processedOrders.set(orderCode, Date.now());
 
-    // 1. Persist to server storage
+    // 1. Persist to server storage FIRST
     saveOrderToStorage(order);
     console.log(`[Order API] Đã lưu thành công đơn hàng ${orderCode} từ ${fullName} (${phoneNumber})`);
 
-    // 2. Format & Send Telegram notification AND Google Sheets in parallel (Independent pipelines)
+    // 2. Format & Send Telegram notification AND Google Sheets in parallel with retry
     const telegramText = buildTelegramMessage(order);
     const [telegramOutcome, sheetOutcome] = await Promise.allSettled([
-      sendTelegramMessage(telegramText),
-      sendGoogleSheetOrder(order)
+      sendWithRetry('Telegram', () => sendTelegramMessage(telegramText), 2, 1000),
+      sendWithRetry('Google Sheets', () => sendGoogleSheetOrder(order), 2, 1000)
     ]);
 
     const telegramResult = telegramOutcome.status === 'fulfilled'
