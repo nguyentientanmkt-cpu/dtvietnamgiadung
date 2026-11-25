@@ -89,7 +89,38 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           paymentMethod: formData.paymentMethod,
           createdAt: new Date().toISOString()
         })
-      }).catch(apiErr => console.warn('Order API error:', apiErr));
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success) {
+          // Google Tag Manager Event: order_success (Chỉ kích hoạt khi hệ thống xác nhận thành công)
+          try {
+            if (typeof window !== 'undefined') {
+              const win = window as any;
+              win._gtmTrackedOrders = win._gtmTrackedOrders || {};
+              if (!win._gtmTrackedOrders[generatedId]) {
+                win._gtmTrackedOrders[generatedId] = true;
+                win.dataLayer = win.dataLayer || [];
+                win.dataLayer.push({
+                  event: 'order_success',
+                  transaction_id: String(generatedId),
+                  value: Number(finalTotal),
+                  currency: 'VND'
+                });
+                console.log('[GTM DataLayer] Pushed order_success from cart:', {
+                  event: 'order_success',
+                  transaction_id: String(generatedId),
+                  value: Number(finalTotal),
+                  currency: 'VND'
+                });
+              }
+            }
+          } catch (gtmErr) {
+            console.warn('[GTM DataLayer Warning]', gtmErr);
+          }
+        }
+      })
+      .catch(apiErr => console.warn('Order API error:', apiErr));
     } catch (err) {
       console.warn('Order submission fetch error:', err);
     }

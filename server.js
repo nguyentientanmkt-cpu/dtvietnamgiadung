@@ -909,14 +909,14 @@ app.all('/api/telegram-auto-setup', async (req, res) => {
 const DIST_DIR = path.join(__dirname, 'dist');
 
 // Landing page redirect rules
-app.get('/binh-xit-diet-moi-mot-kien-gian-con-trung', (req, res) => {
-  res.redirect(301, '/binh-xit-diet-moi-mot-kien-gian-con-trung/');
-});
-app.get('/ladixitmoithailan', (req, res) => {
-  res.redirect(301, '/binh-xit-diet-moi-mot-kien-gian-con-trung/');
-});
-app.get('/ladixitmoithailan/*', (req, res) => {
-  res.redirect(301, '/binh-xit-diet-moi-mot-kien-gian-con-trung/');
+app.use((req, res, next) => {
+  if (req.path === '/binh-xit-diet-moi-mot-kien-gian-con-trung') {
+    return res.redirect(301, '/binh-xit-diet-moi-mot-kien-gian-con-trung/');
+  }
+  if (req.path === '/ladixitmoithailan' || req.path.startsWith('/ladixitmoithailan/')) {
+    return res.redirect(301, '/binh-xit-diet-moi-mot-kien-gian-con-trung/');
+  }
+  next();
 });
 
 // Serve dist directory if exists
