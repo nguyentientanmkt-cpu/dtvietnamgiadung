@@ -1099,15 +1099,17 @@
   line-height: 1.4;
 }
 
-/* 6. Video Giới Thiệu Sản Phẩm */
+/* 6. Video Giới Thiệu Sản Phẩm (Khung Dọc 9:16) */
 .dt-hero-video-banner {
-  margin-top: 32px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border-radius: 14px;
-  padding: 22px 18px;
-  text-align: center;
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  margin-top: 0 !important;
+  margin-bottom: 16px !important;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  border-radius: 14px !important;
+  padding: 16px 14px 18px !important;
+  text-align: center !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.15) !important;
+  box-sizing: border-box !important;
 }
 
 .dt-video-badge-pill {
@@ -1116,30 +1118,150 @@
   gap: 8px;
   background: #ea580c;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 5px 16px;
+  padding: 4px 14px;
   border-radius: 9999px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .dt-video-main-title {
-  font-size: 19px;
+  font-size: 16.5px;
   font-weight: 900;
   color: #ffffff;
-  margin: 0 0 6px;
+  margin: 0 0 5px;
   text-transform: uppercase;
   line-height: 1.35;
 }
 
 .dt-video-main-desc {
-  font-size: 14px;
+  font-size: 13px;
   color: #cbd5e1;
   max-width: 680px;
   margin: 0 auto;
   line-height: 1.45;
+}
+
+/* Khung Video Dọc 9:16 chuẩn TikTok / Reels */
+.dt-vertical-video-wrap {
+  width: 100%;
+  max-width: 290px;
+  margin: 14px auto 0;
+  position: relative;
+  aspect-ratio: 9 / 16;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dt-vertical-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000000;
+}
+
+/* Nút Phát Overlay */
+.dt-video-overlay-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  z-index: 5;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.dt-video-overlay-btn.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.dt-play-pulse-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #ea580c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.7);
+  animation: dtPlayPulse 1.8s infinite;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+@keyframes dtPlayPulse {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.7);
+  }
+  70% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 16px rgba(234, 88, 12, 0);
+  }
+  100% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0);
+  }
+}
+
+.dt-play-pulse-circle svg {
+  width: 26px;
+  height: 26px;
+  margin-left: 4px;
+}
+
+.dt-overlay-label {
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dt-video-overlay-btn:hover .dt-play-pulse-circle {
+  background: #c2410c;
+  transform: scale(1.08);
+}
+
+@media (min-width: 860px) {
+  .dt-hero-video-banner {
+    padding: 18px 20px 20px !important;
+    margin-bottom: 20px !important;
+  }
+  .dt-video-main-title {
+    font-size: 17.5px;
+  }
+  .dt-video-main-desc {
+    font-size: 13.5px;
+  }
+  .dt-vertical-video-wrap {
+    max-width: 310px;
+    margin-top: 16px;
+  }
+}x;
+  }
 }
 
 
@@ -1554,6 +1676,44 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
           <span class="dt-review-num"><strong>1.2K</strong> Đánh giá</span>
         </div>
 
+                <!-- VIDEO GIỚI THIỆU SẢN PHẨM (KHUNG DỌC 9:16 CHUẨN TIKTOK / REELS) -->
+        <div class="dt-hero-video-banner">
+          <div class="dt-video-badge-pill">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span>VIDEO GIỚI THIỆU SẢN PHẨM</span>
+          </div>
+          <h3 class="dt-video-main-title">XEM THỰC TẾ CÔNG NGHỆ BỌT FOAM DIỆT MỐI TẬN TỔ</h3>
+          <p class="dt-video-main-desc">Bình xịt Chaindrite len lỏi vào từng kẽ gỗ, diệt gọn cả mối chúa và đàn mối trong 12 tuần</p>
+          
+          <!-- Khung phát video dọc 9:16 chuẩn Reels / TikTok -->
+          <div class="dt-vertical-video-wrap">
+            <video 
+              id="dt-hero-video-player"
+              class="dt-vertical-video"
+              preload="none"
+              playsinline
+              webkit-playsinline
+              controls
+              controlslist="nodownload"
+              poster="assets/video-poster.jpg"
+              aria-label="Video giới thiệu bình xịt diệt mối Chaindrite Thái Lan"
+            >
+              <source src="assets/video-gioi-thieu-chaindrite.mp4" type="video/mp4">
+              Trình duyệt của bạn không hỗ trợ thẻ video HTML5.
+            </video>
+            <div class="dt-video-overlay-btn" id="dt-video-overlay-btn" onclick="dtPlayHeroVideo()">
+              <div class="dt-play-pulse-circle">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="6 3 20 12 6 21 6 3"></polygon>
+                </svg>
+              </div>
+              <span class="dt-overlay-label">NHẤN ĐỂ XEM VIDEO HD</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Khung Giá Bán & Ưu Đãi Nổi Bật -->
         <div class="dt-hero-price-card">
           <div class="dt-price-columns">
@@ -1635,18 +1795,6 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
         </div>
 
       </div>
-    </div>
-
-    <!-- 3. VIDEO GIỚI THIỆU SẢN PHẨM -->
-    <div class="dt-hero-video-banner">
-      <div class="dt-video-badge-pill">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-          <polygon points="5 3 19 12 5 21 5 3"></polygon>
-        </svg>
-        <span>VIDEO GIỚI THIỆU SẢN PHẨM</span>
-      </div>
-      <h3 class="dt-video-main-title">XEM THỰC TẾ CÔNG NGHỆ BỌT FOAM DIỆT MỐI TẬN TỔ</h3>
-      <p class="dt-video-main-desc">Bình xịt Chaindrite len lỏi vào từng kẽ gỗ, diệt gọn cả mối chúa và đàn mối trong 12 tuần</p>
     </div>
 
   </div>
@@ -2470,14 +2618,16 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
     /* 2. Section 1 (Hero - 2 Cột: Gallery ảnh bên trái, Giá & Mua ngay bên phải) */
     #w-72zuflbq {
       width: 100% !important;
-      height: 780px !important;
+      height: auto !important;
+      min-height: auto !important;
       background: #ffffff !important;
       border-bottom: 1px solid #e2e8f0;
       position: relative !important;
     }
     #w-72zuflbq .section-wrapper,
     #w-72zuflbq .section-container {
-      height: 780px !important;
+      height: auto !important;
+      min-height: auto !important;
     }
     #w-7pwzwone {
       display: none !important;
@@ -3604,6 +3754,51 @@ fbq("init", "1005781178126278", {external_id: window.pixel_external_id});fbq("in
       if (elS) elS.textContent = (s < 10 ? '0' : '') + s;
     }, 1000);
   });
+
+  // --- HERO VERTICAL VIDEO PLAY HANDLER ---
+  window.dtPlayHeroVideo = function() {
+    var video = document.getElementById('dt-hero-video-player');
+    var overlay = document.getElementById('dt-video-overlay-btn');
+    if (!video) return;
+
+    if (overlay) {
+      overlay.classList.add('is-hidden');
+    }
+
+    if (video.networkState === 0 || video.readyState === 0) {
+      video.load();
+    }
+
+    var playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(function(err) {
+        console.warn('Video play error, enabling controls:', err);
+        video.controls = true;
+      });
+    }
+  };
+
+  (function initHeroVideoSync() {
+    function setupVideoSync() {
+      var video = document.getElementById('dt-hero-video-player');
+      var overlay = document.getElementById('dt-video-overlay-btn');
+      if (!video) return;
+
+      video.addEventListener('play', function() {
+        if (overlay) overlay.classList.add('is-hidden');
+      });
+
+      video.addEventListener('ended', function() {
+        if (overlay) overlay.classList.remove('is-hidden');
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupVideoSync);
+    } else {
+      setupVideoSync();
+    }
+  })();
 </script>
 
 </body>

@@ -952,6 +952,10 @@ if (fs.existsSync(DIST_DIR)) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
+      } else if (/\.mp4$/i.test(filePath)) {
+        res.setHeader('Content-Type', 'video/mp4');
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
       } else if (/\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff|woff2)$/i.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       }
